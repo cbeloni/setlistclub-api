@@ -1,0 +1,71 @@
+name: Deploy MGC
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    environment: prod
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: cbeloni
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate .env
+        uses: danielr1996/envsubst-action@1.0.0
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          MYSQL_HOST: ${{ vars.MYSQL_HOST }}
+          MYSQL_PORT: ${{ vars.MYSQL_PORT }}
+          MYSQL_DB: ${{ vars.MYSQL_DB }}
+          MYSQL_USER: ${{ vars.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          REDIS_HOST: ${{ vars.REDIS_HOST }}
+          REDIS_PORT: ${{ vars.REDIS_PORT }}
+          REDIS_DB: ${{ vars.REDIS_DB }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_REDIRECT_URI: ${{ vars.GOOGLE_REDIRECT_URI }}
+        with:
+          input: .env.template
+          output: .env
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: cbeloni/setlistclub-api:amd64
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_MGC }}" > ~/.kube/config
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f argo_mgc/setlistclub-api-mgc.yaml --insecure-skip-tls-verify
+          kubectl apply -f argo_mgc/setlistclub-api-mgc-ingress.yaml --insecure-skip-tls-verify
+          kubectl rollout restart deployment/setlistclub-api --insecure-skip-tls-verify
+          kubectl rollout status deployment/setlistclub-api --insecure-skip-tls-verify
