@@ -14,7 +14,6 @@ spec:
       labels:
         app: setlistclub-api
     spec:
-      enableServiceLinks: false
       containers:
         - name: setlistclub-api
           image: cbeloni/setlistclub-api:amd64
