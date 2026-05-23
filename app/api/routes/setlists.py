@@ -13,7 +13,7 @@ router = APIRouter(prefix="/setlists", tags=["setlists"])
 def list_setlists(db: Session = Depends(get_db)) -> list[Setlist]:
     return (
         db.query(Setlist)
-        .options(joinedload(Setlist.items))
+        .options(joinedload(Setlist.items).joinedload(SetlistItem.chord_sheet))
         .order_by(Setlist.created_at.desc())
         .all()
     )
@@ -23,7 +23,7 @@ def list_setlists(db: Session = Depends(get_db)) -> list[Setlist]:
 def get_setlist(setlist_id: int, db: Session = Depends(get_db)) -> Setlist:
     setlist = (
         db.query(Setlist)
-        .options(joinedload(Setlist.items))
+        .options(joinedload(Setlist.items).joinedload(SetlistItem.chord_sheet))
         .filter(Setlist.id == setlist_id)
         .first()
     )
@@ -65,7 +65,7 @@ def add_song_to_setlist(
 
     updated = (
         db.query(Setlist)
-        .options(joinedload(Setlist.items))
+        .options(joinedload(Setlist.items).joinedload(SetlistItem.chord_sheet))
         .filter(Setlist.id == setlist_id)
         .first()
     )
@@ -81,7 +81,7 @@ def reorder_setlist(
 ) -> Setlist:
     setlist = (
         db.query(Setlist)
-        .options(joinedload(Setlist.items))
+        .options(joinedload(Setlist.items).joinedload(SetlistItem.chord_sheet))
         .filter(Setlist.id == setlist_id)
         .first()
     )
@@ -98,6 +98,63 @@ def reorder_setlist(
     index_map = {item_id: idx for idx, item_id in enumerate(payload.ordered_item_ids)}
     for item in setlist.items:
         item.position = index_map[item.id]
+
+    db.commit()
+    db.refresh(setlist)
+    return setlist
+
+
+@router.delete("/{setlist_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_setlist(
+    setlist_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    setlist = db.query(Setlist).filter(Setlist.id == setlist_id).first()
+    if not setlist:
+        raise HTTPException(status_code=404, detail="Setlist not found")
+    if setlist.created_by_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    db.delete(setlist)
+    db.commit()
+    return None
+
+
+@router.delete("/{setlist_id}/items/{item_id}", response_model=SetlistOut)
+def remove_song_from_setlist(
+    setlist_id: int,
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Setlist:
+    setlist = (
+        db.query(Setlist)
+        .options(joinedload(Setlist.items).joinedload(SetlistItem.chord_sheet))
+        .filter(Setlist.id == setlist_id)
+        .first()
+    )
+    if not setlist:
+        raise HTTPException(status_code=404, detail="Setlist not found")
+    if setlist.created_by_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    item = db.query(SetlistItem).filter(SetlistItem.id == item_id, SetlistItem.setlist_id == setlist_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Setlist item not found")
+
+    db.delete(item)
+    db.commit()
+
+    # Re-index positions of remaining items
+    remaining_items = (
+        db.query(SetlistItem)
+        .filter(SetlistItem.setlist_id == setlist_id)
+        .order_by(SetlistItem.position)
+        .all()
+    )
+    for idx, r_item in enumerate(remaining_items):
+        r_item.position = idx
 
     db.commit()
     db.refresh(setlist)

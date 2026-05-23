@@ -54,3 +54,20 @@ def update_chord_sheet(
     db.commit()
     db.refresh(chord_sheet)
     return chord_sheet
+
+
+@router.delete("/{chord_sheet_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_chord_sheet(
+    chord_sheet_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    chord_sheet = db.query(ChordSheet).filter(ChordSheet.id == chord_sheet_id).first()
+    if not chord_sheet:
+        raise HTTPException(status_code=404, detail="Chord sheet not found")
+    if chord_sheet.created_by_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    db.delete(chord_sheet)
+    db.commit()
+    return None

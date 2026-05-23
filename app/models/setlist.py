@@ -33,3 +33,11 @@ class SetlistItem(Base):
 
     setlist = relationship("Setlist", back_populates="items")
     chord_sheet = relationship("ChordSheet", back_populates="setlist_items")
+
+    @property
+    def title(self) -> str:
+        return self.chord_sheet.title if self.chord_sheet else ""
+
+    @property
+    def artist(self) -> str:
+        return self.chord_sheet.artist if self.chord_sheet else ""

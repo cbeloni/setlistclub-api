@@ -20,6 +20,8 @@ class SetlistItemOut(BaseModel):
     id: int
     position: int
     chord_sheet_id: int
+    title: str | None = None
+    artist: str | None = None
 
     class Config:
         from_attributes = True

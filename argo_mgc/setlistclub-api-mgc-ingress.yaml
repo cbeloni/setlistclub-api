@@ -30,7 +30,7 @@ spec:
                 name: setlistclub-api-svc
                 port:
                   number: 80
-    - host: api.setlistclub.beloni.dev.br
+    - host: setlistclub-api.beloni.dev.br
       http:
         paths:
           - path: /
