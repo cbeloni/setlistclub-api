@@ -15,27 +15,6 @@ async def lifespan(_: FastAPI):
     # Auto-create schema on first boot for the configured MySQL user.
     Base.metadata.create_all(bind=engine)
 
-    # Auto-create test user if not present
-    from app.db.session import SessionLocal
-    from app.models.user import User
-    from app.core.security import get_password_hash
-
-    db = SessionLocal()
-    try:
-        test_user = db.query(User).filter(User.email == "teste@teste.com").first()
-        if not test_user:
-            test_user = User(
-                email="teste@teste.com",
-                display_name="Usuário de Teste",
-                hashed_password=get_password_hash("123"),
-            )
-            db.add(test_user)
-            db.commit()
-    except Exception as e:
-        print(f"Error seeding test user: {e}")
-    finally:
-        db.close()
-
     await redis_client.ping()
     yield
     await redis_client.aclose()
