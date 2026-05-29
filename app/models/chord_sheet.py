@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -15,6 +15,7 @@ class ChordSheet(Base):
     key_signature: Mapped[str | None] = mapped_column(String(16), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     youtube_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    scroll_speed: Mapped[float] = mapped_column(Float, nullable=False, server_default="1.0")
     created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(

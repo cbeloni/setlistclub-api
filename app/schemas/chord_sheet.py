@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class ChordSheetBase(BaseModel):
@@ -9,6 +9,7 @@ class ChordSheetBase(BaseModel):
     key_signature: str | None = None
     content: str
     youtube_url: HttpUrl | None = None
+    scroll_speed: float = Field(default=1.0, ge=0.2, le=1.8)
 
 
 class ChordSheetCreate(ChordSheetBase):
@@ -17,6 +18,10 @@ class ChordSheetCreate(ChordSheetBase):
 
 class ChordSheetUpdate(ChordSheetBase):
     pass
+
+
+class ChordSheetScrollSpeedUpdate(BaseModel):
+    scroll_speed: float = Field(ge=0.2, le=1.8)
 
 
 class ChordSheetOut(ChordSheetBase):

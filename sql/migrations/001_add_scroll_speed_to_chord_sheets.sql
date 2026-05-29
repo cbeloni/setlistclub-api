@@ -1,0 +1,2 @@
+ALTER TABLE chord_sheets
+ADD COLUMN scroll_speed FLOAT NOT NULL DEFAULT 1.0;
