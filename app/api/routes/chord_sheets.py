@@ -1,6 +1,7 @@
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
@@ -18,6 +19,11 @@ router = APIRouter(prefix="/chord-sheets", tags=["chord-sheets"])
 
 RECENT_VIEWS_MAX = 50
 RECENT_VIEWS_TTL = 60 * 60 * 24 * 30  # 30 days
+TAB_VISIBILITY_TTL = 60 * 60 * 24 * 365  # 1 year
+
+
+class TabVisibilityUpdate(BaseModel):
+    tab_hidden: bool
 
 
 @router.get("", response_model=list[ChordSheetOut])
@@ -31,7 +37,6 @@ async def list_recently_viewed(
     current_user: User = Depends(get_current_user),
 ) -> list[ChordSheet]:
     key = f"recent:{current_user.id}"
-    # Busca os IDs ordenados por score descendente
     member_scores = await redis_client.zrevrange(key, 0, RECENT_VIEWS_MAX - 1, withscores=True)
     if not member_scores:
         return []
@@ -60,12 +65,32 @@ async def record_chord_sheet_view(
 ) -> None:
     key = f"recent:{current_user.id}"
     now = time.time()
-    # Adiciona/atualiza o member com o timestamp atual como score
     await redis_client.zadd(key, {str(chord_sheet_id): now})
-    # Mantém apenas os RECENT_VIEWS_MAX mais recentes
     await redis_client.zremrangebyrank(key, 0, -(RECENT_VIEWS_MAX + 1))
-    # Atualiza o TTL da chave
     await redis_client.expire(key, RECENT_VIEWS_TTL)
+
+
+@router.get("/{chord_sheet_id}/tab-visibility", response_model=TabVisibilityUpdate)
+async def get_tab_visibility(
+    chord_sheet_id: int,
+    current_user: User = Depends(get_current_user),
+) -> TabVisibilityUpdate:
+    key = f"tab:{current_user.id}:{chord_sheet_id}"
+    value = await redis_client.get(key)
+    # Default: tab_hidden = True (hidden/tab oculta)
+    if value is None:
+        return TabVisibilityUpdate(tab_hidden=True)
+    return TabVisibilityUpdate(tab_hidden=value == "1")
+
+
+@router.put("/{chord_sheet_id}/tab-visibility", status_code=status.HTTP_204_NO_CONTENT)
+async def set_tab_visibility(
+    chord_sheet_id: int,
+    payload: TabVisibilityUpdate,
+    current_user: User = Depends(get_current_user),
+) -> None:
+    key = f"tab:{current_user.id}:{chord_sheet_id}"
+    await redis_client.setex(key, TAB_VISIBILITY_TTL, "1" if payload.tab_hidden else "0")
 
 
 @router.post("", response_model=ChordSheetOut, status_code=status.HTTP_201_CREATED)
