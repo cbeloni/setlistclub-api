@@ -50,8 +50,6 @@ def update_chord_sheet(
     chord_sheet = db.query(ChordSheet).filter(ChordSheet.id == chord_sheet_id).first()
     if not chord_sheet:
         raise HTTPException(status_code=404, detail="Chord sheet not found")
-    if chord_sheet.created_by_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not allowed")
 
     for key, value in payload.model_dump().items():
         setattr(chord_sheet, key, value)
@@ -71,8 +69,6 @@ def update_chord_sheet_scroll_speed(
     chord_sheet = db.query(ChordSheet).filter(ChordSheet.id == chord_sheet_id).first()
     if not chord_sheet:
         raise HTTPException(status_code=404, detail="Chord sheet not found")
-    if chord_sheet.created_by_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not allowed")
 
     chord_sheet.scroll_speed = payload.scroll_speed
     db.commit()

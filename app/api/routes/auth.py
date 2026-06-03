@@ -1,4 +1,3 @@
-from datetime import timedelta
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,9 +8,10 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.core.config import settings
 from app.core.security import create_access_token, create_refresh_token, get_password_hash, verify_password
+from app.db.session import redis_client
 from app.models.user import User
-from app.schemas.auth import GoogleTokenRequest, LoginRequest, RegisterRequest, TokenResponse, UserOut
-from app.services.session_store import store_refresh_token
+from app.schemas.auth import GoogleTokenRequest, LoginRequest, RefreshTokenRequest, RegisterRequest, TokenResponse, UserOut
+from app.services.session_store import revoke_refresh_token, store_refresh_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -37,6 +37,31 @@ async def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> T
     db.commit()
     db.refresh(user)
 
+    token_response = _build_token_response(user)
+    ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    await store_refresh_token(token_response.refresh_token, user.id, ttl)
+    return token_response
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh(payload: RefreshTokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    # Verifica se o refresh token existe no Redis
+    user_id_str = await redis_client.get(f"refresh:{payload.refresh_token}")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+
+    # Revoga o refresh token antigo (rotação)
+    await revoke_refresh_token(payload.refresh_token)
+
+    # Busca o usuário no banco
+    user = db.query(User).filter(User.id == int(user_id_str)).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+    # Gera novos tokens
     token_response = _build_token_response(user)
     ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     await store_refresh_token(token_response.refresh_token, user.id, ttl)
