@@ -10,6 +10,7 @@ class ChordSheetBase(BaseModel):
     content: str
     youtube_url: HttpUrl | None = None
     scroll_speed: float = Field(default=1.0, ge=0.2, le=1.8)
+    is_private: bool = False
 
 
 class ChordSheetCreate(ChordSheetBase):
@@ -27,7 +28,12 @@ class ChordSheetScrollSpeedUpdate(BaseModel):
 class ChordSheetOut(ChordSheetBase):
     id: int
     created_by_id: int
+    created_by_name: str | None = None
     created_at: datetime
+    view_count: int = 0
+    is_private: bool
+    share_token: str
+    share_url: str | None = None
 
     class Config:
         from_attributes = True

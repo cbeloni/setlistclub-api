@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     APP_NAME: str = "Setlist Club API"
     API_PREFIX: str = "/api/v1"
+    BASE_URL: str = "http://localhost:3000"
 
     SECRET_KEY: str = "change-me"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

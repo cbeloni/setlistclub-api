@@ -142,6 +142,7 @@ docker compose down -v
 
 | Variável                      | Descrição                            | Padrão local          |
 |-------------------------------|--------------------------------------|-----------------------|
+| `BASE_URL`                   | URL pública do frontend              | `http://localhost:3000` |
 | `MYSQL_HOST`                  | Host do MySQL                        | `localhost`           |
 | `MYSQL_PORT`                  | Porta do MySQL                       | `3306`                |
 | `MYSQL_DB`                    | Nome do banco                        | `setlistclub`         |

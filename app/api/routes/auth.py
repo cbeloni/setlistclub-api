@@ -5,7 +5,7 @@ from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db
 from app.core.config import settings
 from app.core.security import create_access_token, create_refresh_token, get_password_hash, verify_password
 from app.db.session import redis_client
@@ -14,6 +14,17 @@ from app.schemas.auth import GoogleTokenRequest, LoginRequest, RefreshTokenReque
 from app.services.session_store import revoke_refresh_token, store_refresh_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.get("/users/search")
+def search_users(
+    q: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[UserOut]:
+    """Search users by email (partial match)."""
+    users = db.query(User).filter(User.email.ilike(f"%{q}%")).limit(10).all()
+    return [UserOut.model_validate(u) for u in users]
 
 
 def _build_token_response(user: User) -> TokenResponse:

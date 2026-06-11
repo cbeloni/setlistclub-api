@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class SetlistCreate(BaseModel):
     name: str
     description: str | None = None
+    is_private: bool = False
 
 
 class SetlistItemCreate(BaseModel):
@@ -31,6 +32,9 @@ class SetlistOut(BaseModel):
     id: int
     name: str
     description: str | None
+    is_private: bool
+    share_token: str
+    share_url: str | None = None
     created_by_id: int
     created_at: datetime
     items: list[SetlistItemOut]
