@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS chord_sheets (
     artist VARCHAR(255) NOT NULL,
     key_signature VARCHAR(16) NULL,
     content TEXT NOT NULL,
+    image_data LONGTEXT NULL,
     youtube_url VARCHAR(1024) NULL,
     scroll_speed FLOAT NOT NULL DEFAULT 1.0,
     created_by_id INT NOT NULL,

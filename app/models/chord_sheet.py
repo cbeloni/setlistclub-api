@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -15,6 +16,7 @@ class ChordSheet(Base):
     artist: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     key_signature: Mapped[str | None] = mapped_column(String(16), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    image_data: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
     youtube_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     scroll_speed: Mapped[float] = mapped_column(Float, nullable=False, server_default="1.0")
     is_private: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

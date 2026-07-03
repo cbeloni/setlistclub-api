@@ -1,4 +1,5 @@
 import time
+import json
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -239,7 +240,8 @@ def create_chord_sheet(
     current_user: User = Depends(get_current_user),
 ) -> ChordSheetOut:
     chord_sheet = ChordSheet(
-        **payload.model_dump(exclude={"is_private"}),
+        **payload.model_dump(exclude={"is_private", "image_data"}),
+        image_data=json.dumps(payload.image_data) if payload.image_data else None,
         is_private=payload.is_private,
         share_token=str(uuid.uuid4()),
         created_by_id=current_user.id,
@@ -264,6 +266,8 @@ def update_chord_sheet(
         raise HTTPException(status_code=403, detail="Not allowed")
 
     update_data = payload.model_dump(exclude_unset=True)
+    if "image_data" in update_data:
+        update_data["image_data"] = json.dumps(update_data["image_data"]) if update_data["image_data"] else None
     if "is_private" in update_data and chord_sheet.created_by_id != current_user.id:
         raise HTTPException(status_code=403, detail="Only the owner can change privacy")
     for key, value in update_data.items():
