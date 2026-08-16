@@ -7,4 +7,4 @@ elif [ -f "venv/bin/activate" ]; then
   . "venv/bin/activate"
 fi
 
-python -m uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload --port 3001

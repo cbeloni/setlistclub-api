@@ -45,10 +45,14 @@ class ChordSheetBase(BaseModel):
     @model_validator(mode="after")
     def validate_content_or_image(self):
         if self.image_data:
-            if not all(isinstance(item, str) and item.startswith("data:image/") for item in self.image_data):
-                raise ValueError("image_data deve conter apenas strings data:image/.")
+            for item in self.image_data:
+                if not (
+                    isinstance(item, str)
+                    and (item.startswith("data:image/") or item.startswith("data:application/pdf"))
+                ):
+                    raise ValueError("image_data deve conter apenas strings data:image/ ou data:application/pdf.")
         if not self.content.strip() and not self.image_data:
-            raise ValueError("Adicione a cifra em texto ou uma imagem.")
+            raise ValueError("Adicione a cifra em texto, uma imagem ou um PDF.")
         return self
 
 
