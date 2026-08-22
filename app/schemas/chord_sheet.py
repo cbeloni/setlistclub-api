@@ -80,3 +80,23 @@ class ChordSheetOut(ChordSheetBase):
 
     class Config:
         from_attributes = True
+
+
+class ChordSheetListOut(BaseModel):
+    """Metadata returned by collection endpoints without large sheet payloads."""
+
+    id: int
+    title: str
+    artist: str
+    key_signature: str | None = None
+    scroll_speed: float = 1.0
+    is_private: bool = False
+    created_by_id: int
+    created_by_name: str | None = None
+    created_at: datetime
+    view_count: int = 0
+    share_token: str
+    share_url: str | None = None
+
+    class Config:
+        from_attributes = True
