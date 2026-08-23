@@ -46,11 +46,16 @@ class ChordSheetBase(BaseModel):
     def validate_content_or_image(self):
         if self.image_data:
             for item in self.image_data:
-                if not (
-                    isinstance(item, str)
-                    and (item.startswith("data:image/") or item.startswith("data:application/pdf"))
-                ):
-                    raise ValueError("image_data deve conter apenas strings data:image/ ou data:application/pdf.")
+                if not isinstance(item, str) or not item.strip():
+                    raise ValueError("image_data deve conter apenas strings válidas.")
+                if item.startswith("data:"):
+                    if not (
+                        item.startswith("data:image/")
+                        or item.startswith("data:application/pdf")
+                    ):
+                        raise ValueError(
+                            "image_data deve conter apenas strings data:image/ ou data:application/pdf."
+                        )
         if not self.content.strip() and not self.image_data:
             raise ValueError("Adicione a cifra em texto, uma imagem ou um PDF.")
         return self
@@ -77,6 +82,10 @@ class ChordSheetOut(ChordSheetBase):
     is_private: bool
     share_token: str
     share_url: str | None = None
+    # True quando as imagens/PDFs estão no bucket (image_data contém caminhos).
+    # False quando estão gravadas como data URIs no banco (legado) ou não há arquivos.
+    is_bucket_storage: bool = False
+    bucket_base_url: str | None = None
 
     class Config:
         from_attributes = True

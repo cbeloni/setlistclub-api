@@ -4,6 +4,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv(override=True)
 
+# Nome e região do bucket fixos no código (Magalu Objects)
+BUCKET_NAME = "cifras"
+BUCKET_REGION = "br-se1"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -28,6 +33,28 @@ class Settings(BaseSettings):
 
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_REDIRECT_URI: str = ""
+
+    BUCKET_URL: str = ""
+    BUCKET_ACCESS_KEY_ID: str = ""
+    BUCKET_SECRET_ACCESS_KEY: str = ""
+
+    @property
+    def bucket_endpoint(self) -> str | None:
+        """Endpoint S3 da Magalu. Se BUCKET_URL não for definido, deriva por região."""
+        if self.BUCKET_URL:
+            return self.BUCKET_URL.rstrip("/")
+        return f"https://{BUCKET_REGION}.magaluobjects.com"
+
+    @property
+    def bucket_configured(self) -> bool:
+        return bool(self.bucket_endpoint and BUCKET_NAME)
+
+    @property
+    def bucket_base_url(self) -> str | None:
+        """URL pública base para montar o caminho dos objetos no bucket (virtual-hosted)."""
+        if not self.bucket_configured:
+            return None
+        return f"https://{BUCKET_NAME}.{BUCKET_REGION}.magaluobjects.com"
 
     @property
     def sqlalchemy_database_uri(self) -> str:

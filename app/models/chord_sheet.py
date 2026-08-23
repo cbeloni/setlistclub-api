@@ -17,6 +17,9 @@ class ChordSheet(Base):
     key_signature: Mapped[str | None] = mapped_column(String(16), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     image_data: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
+    is_bucket_storage: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )
     youtube_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     scroll_speed: Mapped[float] = mapped_column(Float, nullable=False, server_default="1.0")
     is_private: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

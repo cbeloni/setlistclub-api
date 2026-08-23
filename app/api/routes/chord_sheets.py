@@ -1,5 +1,4 @@
 import time
-import json
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,6 +24,11 @@ from app.services.sharing import (
     list_shared_users,
     share_resource,
     unshare_resource,
+)
+from app.services.storage import (
+    delete_file,
+    parse_image_data_keys,
+    process_image_data,
 )
 
 router = APIRouter(prefix="/chord-sheets", tags=["chord-sheets"])
@@ -54,6 +58,8 @@ def _enrich_sheet(sheet: ChordSheet, schema=ChordSheetOut):
     view_count = redis_sync_client.get(f"views:chord_sheet:{sheet.id}")
     data.view_count = int(view_count or 0)
     data.share_url = f"{settings.BASE_URL}/c/{sheet.share_token}"
+    if "bucket_base_url" in schema.model_fields:
+        data.bucket_base_url = settings.bucket_base_url if sheet.is_bucket_storage else None
     return data
 
 
@@ -72,6 +78,7 @@ def _list_columns():
         ChordSheet.is_private,
         ChordSheet.created_by_id,
         ChordSheet.created_at,
+        ChordSheet.is_bucket_storage,
         ChordSheet.share_token,
     )
 
@@ -254,9 +261,11 @@ def create_chord_sheet(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ChordSheetOut:
+    image_data_json, is_bucket_storage = process_image_data(payload.image_data)
     chord_sheet = ChordSheet(
         **payload.model_dump(exclude={"is_private", "image_data"}),
-        image_data=json.dumps(payload.image_data) if payload.image_data else None,
+        image_data=image_data_json,
+        is_bucket_storage=is_bucket_storage,
         is_private=payload.is_private,
         share_token=str(uuid.uuid4()),
         created_by_id=current_user.id,
@@ -282,7 +291,9 @@ def update_chord_sheet(
 
     update_data = payload.model_dump(exclude_unset=True)
     if "image_data" in update_data:
-        update_data["image_data"] = json.dumps(update_data["image_data"]) if update_data["image_data"] else None
+        image_data_json, is_bucket_storage = process_image_data(update_data["image_data"])
+        update_data["image_data"] = image_data_json
+        update_data["is_bucket_storage"] = is_bucket_storage
     if "is_private" in update_data and chord_sheet.created_by_id != current_user.id:
         raise HTTPException(status_code=403, detail="Only the owner can change privacy")
     for key, value in update_data.items():
@@ -321,6 +332,14 @@ def delete_chord_sheet(
         raise HTTPException(status_code=404, detail="Chord sheet not found")
     if not _can_modify_sheet(chord_sheet, current_user, db):
         raise HTTPException(status_code=403, detail="Not allowed")
+
+    # Remove os arquivos do bucket antes de apagar o registro
+    if chord_sheet.is_bucket_storage:
+        for key in parse_image_data_keys(chord_sheet.image_data):
+            try:
+                delete_file(key)
+            except Exception:
+                pass
 
     db.delete(chord_sheet)
     db.commit()
