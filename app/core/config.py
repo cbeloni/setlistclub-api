@@ -47,7 +47,12 @@ class Settings(BaseSettings):
 
     @property
     def bucket_configured(self) -> bool:
-        return bool(self.bucket_endpoint and BUCKET_NAME)
+        return bool(
+            self.bucket_endpoint
+            and BUCKET_NAME
+            and self.BUCKET_ACCESS_KEY_ID
+            and self.BUCKET_SECRET_ACCESS_KEY
+        )
 
     @property
     def bucket_base_url(self) -> str | None:

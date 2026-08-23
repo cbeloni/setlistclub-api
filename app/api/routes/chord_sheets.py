@@ -1,5 +1,6 @@
 import time
 import uuid
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -32,6 +33,8 @@ from app.services.storage import (
 )
 
 router = APIRouter(prefix="/chord-sheets", tags=["chord-sheets"])
+
+logger = logging.getLogger(__name__)
 
 RECENT_VIEWS_MAX = 50
 RECENT_VIEWS_TTL = 60 * 60 * 24 * 30  # 30 days
@@ -261,7 +264,14 @@ def create_chord_sheet(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ChordSheetOut:
-    image_data_json, is_bucket_storage = process_image_data(payload.image_data)
+    try:
+        image_data_json, is_bucket_storage = process_image_data(payload.image_data)
+    except Exception as exc:
+        logger.exception("Falha ao processar arquivos da cifra (create): %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Falha ao enviar o arquivo para o bucket. Verifique a configuração do bucket (BUCKET_URL/credenciais).",
+        )
     chord_sheet = ChordSheet(
         **payload.model_dump(exclude={"is_private", "image_data"}),
         image_data=image_data_json,
@@ -291,7 +301,14 @@ def update_chord_sheet(
 
     update_data = payload.model_dump(exclude_unset=True)
     if "image_data" in update_data:
-        image_data_json, is_bucket_storage = process_image_data(update_data["image_data"])
+        try:
+            image_data_json, is_bucket_storage = process_image_data(update_data["image_data"])
+        except Exception as exc:
+            logger.exception("Falha ao processar arquivos da cifra (update): %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Falha ao enviar o arquivo para o bucket. Verifique a configuração do bucket (BUCKET_URL/credenciais).",
+            )
         update_data["image_data"] = image_data_json
         update_data["is_bucket_storage"] = is_bucket_storage
     if "is_private" in update_data and chord_sheet.created_by_id != current_user.id:

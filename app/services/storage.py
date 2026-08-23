@@ -8,6 +8,7 @@ o data URI completo no banco.
 import base64
 import io
 import json
+import logging
 import uuid
 
 import boto3
@@ -15,6 +16,18 @@ import boto3
 from app.core.config import BUCKET_NAME, BUCKET_REGION, settings
 
 FOLDER = "chord_sheets"
+logger = logging.getLogger(__name__)
+
+
+def _bucket_config_summary() -> dict:
+    """Resumo da configuração do bucket para logs (sem expor segredos)."""
+    return {
+        "endpoint": settings.bucket_endpoint,
+        "region": BUCKET_REGION,
+        "bucket": BUCKET_NAME,
+        "has_access_key_id": bool(settings.BUCKET_ACCESS_KEY_ID),
+        "has_secret_access_key": bool(settings.BUCKET_SECRET_ACCESS_KEY),
+    }
 
 
 def _s3_client():
@@ -49,12 +62,27 @@ def upload_data_uri(data_uri: str) -> str:
     raw = base64.b64decode(payload)
     object_key = f"{FOLDER}/{uuid.uuid4().hex}{_extension_for_content_type(content_type)}"
 
-    _s3_client().upload_fileobj(
-        io.BytesIO(raw),
-        BUCKET_NAME,
+    logger.info(
+        "Enviando arquivo para o bucket: config=%s key=%s content_type=%s",
+        _bucket_config_summary(),
         object_key,
-        ExtraArgs={"ContentType": content_type},
+        content_type,
     )
+    try:
+        _s3_client().upload_fileobj(
+            io.BytesIO(raw),
+            BUCKET_NAME,
+            object_key,
+            ExtraArgs={"ContentType": content_type},
+        )
+    except Exception as exc:
+        logger.exception(
+            "Falha ao enviar arquivo para o bucket: key=%s config=%s erro=%s",
+            object_key,
+            _bucket_config_summary(),
+            exc,
+        )
+        raise
     return object_key
 
 
@@ -82,6 +110,13 @@ def process_image_data(image_data: list[str] | None) -> tuple[str | None, bool]:
     items: list[str] = []
     uses_bucket = False
 
+    if not settings.bucket_configured:
+        logger.warning(
+            "Bucket NÃO configurado (endpoint/credenciais ausentes). Mantendo arquivos como "
+            "data URI no banco (legado). Config=%s",
+            _bucket_config_summary(),
+        )
+
     for item in image_data:
         item = (item or "").strip()
         if not item:
@@ -101,6 +136,13 @@ def process_image_data(image_data: list[str] | None) -> tuple[str | None, bool]:
 
     if not items:
         return None, False
+
+    logger.info(
+        "process_image_data: %d item(ns) processados, is_bucket_storage=%s, config=%s",
+        len(items),
+        uses_bucket,
+        _bucket_config_summary(),
+    )
     return json.dumps(items), uses_bucket
 
 
