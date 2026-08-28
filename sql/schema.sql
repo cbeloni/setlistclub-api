@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS chord_sheets (
     content TEXT NOT NULL,
     image_data LONGTEXT NULL,
     youtube_url VARCHAR(1024) NULL,
+    drum_machine VARCHAR(2048) NULL,
     scroll_speed FLOAT NOT NULL DEFAULT 1.0,
     created_by_id INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

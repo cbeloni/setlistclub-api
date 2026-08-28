@@ -34,6 +34,7 @@ class ChordSheetBase(BaseModel):
     content: str
     image_data: list[str] | None = None
     youtube_url: HttpUrl | None = None
+    drum_machine: str | None = Field(default=None, max_length=2048)
     scroll_speed: float = Field(default=1.0, ge=0.2, le=1.8)
     is_private: bool = False
 
@@ -73,6 +74,10 @@ class ChordSheetScrollSpeedUpdate(BaseModel):
     scroll_speed: float = Field(ge=0.2, le=1.8)
 
 
+class ChordSheetDrumMachineUpdate(BaseModel):
+    drum_machine: str | None = Field(default=None, max_length=2048)
+
+
 class ChordSheetOut(ChordSheetBase):
     id: int
     created_by_id: int
@@ -82,6 +87,7 @@ class ChordSheetOut(ChordSheetBase):
     is_private: bool
     share_token: str
     share_url: str | None = None
+    drum_machine: str | None = None
     # True quando as imagens/PDFs estão no bucket (image_data contém caminhos).
     # False quando estão gravadas como data URIs no banco (legado) ou não há arquivos.
     is_bucket_storage: bool = False
@@ -106,6 +112,7 @@ class ChordSheetListOut(BaseModel):
     view_count: int = 0
     share_token: str
     share_url: str | None = None
+    drum_machine: str | None = None
 
     class Config:
         from_attributes = True

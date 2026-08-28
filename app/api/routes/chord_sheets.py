@@ -14,6 +14,7 @@ from app.models.shared_resource import SharedResource
 from app.models.user import User
 from app.schemas.chord_sheet import (
     ChordSheetCreate,
+    ChordSheetDrumMachineUpdate,
     ChordSheetListOut,
     ChordSheetOut,
     ChordSheetScrollSpeedUpdate,
@@ -79,6 +80,7 @@ def _list_columns():
         ChordSheet.key_signature,
         ChordSheet.scroll_speed,
         ChordSheet.is_private,
+        ChordSheet.drum_machine,
         ChordSheet.created_by_id,
         ChordSheet.created_at,
         ChordSheet.is_bucket_storage,
@@ -333,6 +335,24 @@ def update_chord_sheet_scroll_speed(
         raise HTTPException(status_code=404, detail="Chord sheet not found")
 
     chord_sheet.scroll_speed = payload.scroll_speed
+    db.commit()
+    db.refresh(chord_sheet)
+    return _enrich_sheet(chord_sheet)
+
+
+@router.put("/{chord_sheet_id}/drum-machine", response_model=ChordSheetOut)
+def update_chord_sheet_drum_machine(
+    chord_sheet_id: int,
+    payload: ChordSheetDrumMachineUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChordSheetOut:
+    chord_sheet = db.query(ChordSheet).filter(ChordSheet.id == chord_sheet_id).first()
+    if not chord_sheet:
+        raise HTTPException(status_code=404, detail="Chord sheet not found")
+    if not _can_modify_sheet(chord_sheet, current_user, db):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    chord_sheet.drum_machine = payload.drum_machine
     db.commit()
     db.refresh(chord_sheet)
     return _enrich_sheet(chord_sheet)
