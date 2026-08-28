@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
 
@@ -49,6 +49,16 @@ def run_migrations(engine: Engine) -> list[str]:
             continue
 
         with engine.begin() as connection:
+            # Base.metadata.create_all() runs before migrations. Therefore the
+            # rhythm table may already exist even when migration 008 is not
+            # registered in schema_migrations yet.
+            if version == "008_create_drum_machine_rhythms" and inspect(connection).has_table("drum_machine_rhythms"):
+                connection.execute(
+                    text("INSERT INTO schema_migrations (version) VALUES (:version)"),
+                    {"version": version},
+                )
+                executed_versions.append(version)
+                continue
             for statement in [part.strip() for part in sql.split(";") if part.strip()]:
                 connection.execute(text(statement))
             connection.execute(

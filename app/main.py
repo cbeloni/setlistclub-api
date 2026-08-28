@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.db.base import Base
 from app.db.migrations import run_migrations
 from app.db.session import engine, redis_client
-from app.models import ChordSheet, Setlist, SetlistItem, User  # noqa: F401
+from app.models import ChordSheet, DrumMachineRhythm, Setlist, SetlistItem, User  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
