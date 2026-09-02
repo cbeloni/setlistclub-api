@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: setlistclub-api
+  name: musicgym-api
   labels:
-    app: setlistclub-api
+    app: musicgym-api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: setlistclub-api
+      app: musicgym-api
   template:
     metadata:
       labels:
-        app: setlistclub-api
+        app: musicgym-api
     spec:
       containers:
-        - name: setlistclub-api
-          image: cbeloni/setlistclub-api:amd64
+        - name: musicgym-api
+          image: cbeloni/musicgym-api:amd64
           imagePullPolicy: Always
           ports:
             - name: http

@@ -102,7 +102,7 @@ def google_auth_url() -> dict[str, str]:
             "redirect_uri": settings.GOOGLE_REDIRECT_URI,
             "response_type": "id_token",
             "scope": "openid email profile",
-            "nonce": "setlistclub",
+            "nonce": "musicgym",
             "prompt": "select_account",
         }
     )

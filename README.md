@@ -1,4 +1,4 @@
-# Setlist Club API
+# MusicGym API
 
 API com FastAPI + MySQL + Redis para gestão de cifras e setlists.
 
@@ -14,7 +14,7 @@ API com FastAPI + MySQL + Redis para gestão de cifras e setlists.
 
 ## 1. Subir MySQL e Redis com Docker
 
-Execute a partir da **raiz do monorepo** (`/setlistclub`):
+Execute a partir da **raiz do monorepo** (`/musicgym`):
 
 ```bash
 docker compose up -d mysql redis
@@ -40,7 +40,7 @@ Serviços disponíveis:
 Entre na pasta da API:
 
 ```bash
-cd setlistclub-api
+cd musicgym-api
 ```
 
 Copie o arquivo de exemplo e ajuste as variáveis se necessário:
@@ -145,9 +145,9 @@ docker compose down -v
 | `BASE_URL`                   | URL pública do frontend              | `http://localhost:3000` |
 | `MYSQL_HOST`                  | Host do MySQL                        | `localhost`           |
 | `MYSQL_PORT`                  | Porta do MySQL                       | `3306`                |
-| `MYSQL_DB`                    | Nome do banco                        | `setlistclub`         |
-| `MYSQL_USER`                  | Usuário do banco                     | `setlistclub`         |
-| `MYSQL_PASSWORD`              | Senha do banco                       | `setlistclub`         |
+| `MYSQL_DB`                    | Nome do banco                        | `musicgym`          |
+| `MYSQL_USER`                  | Usuário do banco                     | `musicgym`          |
+| `MYSQL_PASSWORD`              | Senha do banco                       | `musicgym`          |
 | `REDIS_HOST`                  | Host do Redis                        | `localhost`           |
 | `REDIS_PORT`                  | Porta do Redis                       | `6379`                |
 | `SECRET_KEY`                  | Chave JWT (altere em produção!)      | `change-me`           |

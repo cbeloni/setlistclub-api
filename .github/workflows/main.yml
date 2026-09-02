@@ -54,7 +54,7 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: cbeloni/setlistclub-api:amd64
+          tags: cbeloni/musicgym-api:amd64
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
@@ -68,7 +68,7 @@ jobs:
 
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f argo_mgc/setlistclub-api-mgc.yaml --insecure-skip-tls-verify
-          kubectl apply -f argo_mgc/setlistclub-api-mgc-ingress.yaml --insecure-skip-tls-verify
-          kubectl rollout restart deployment/setlistclub-api --insecure-skip-tls-verify
-          kubectl rollout status deployment/setlistclub-api --insecure-skip-tls-verify
+          kubectl apply -f argo_mgc/musicgym-api-mgc.yaml --insecure-skip-tls-verify
+          kubectl apply -f argo_mgc/musicgym-api-mgc-ingress.yaml --insecure-skip-tls-verify
+          kubectl rollout restart deployment/musicgym-api --insecure-skip-tls-verify
+          kubectl rollout status deployment/musicgym-api --insecure-skip-tls-verify
